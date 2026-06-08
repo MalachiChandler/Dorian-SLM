@@ -1,3 +1,7 @@
+import random
+import heapq
+import re
+
 # Getting random chunks from training text
 def get_chunk(text, chunk_size):
   possible_chunks = round(len(text) / chunk_size)
