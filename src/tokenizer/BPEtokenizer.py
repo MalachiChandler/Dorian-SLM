@@ -3,6 +3,7 @@ import heapq
 import re
 import pickle
 from itertools import islice
+from .functions import get_chunk
 
 ### Tokenizer Class ###
 class tokenizer():
