@@ -5,13 +5,13 @@ if config.layer == "standard":
 # Creating class for model
 class Dorian_SLM(nn.Module):
 
-  def __init__(self , V , C , T , n_heads=1, n_layers=1):
+  def __init__(self , V , C , T , k=2, N=4, n_heads=1, n_layers=1):
     super().__init__()
     # creating embedding table that has a vector with C dimentions for each V token in the vocab
     self.embeddingTable = nn.Embedding(V , C)
     self.pos_embedding = nn.Embedding(T , C)
     # Transformer Layers including multiheaded attention and MLPs with LayerNormalization and residuals
-    self.layers = nn.ModuleList([layer(C, T, n_heads) for i in range(n_layers)])
+    self.layers = nn.ModuleList([layer(C, T, n_heads, k, N) for i in range(n_layers)])
     self.LN = nn.LayerNorm(C)
     # creating single perceptron layer resposible for learning token predictions
     self.percep = nn.Linear(C , V, bias=False, )
@@ -22,7 +22,11 @@ class Dorian_SLM(nn.Module):
     scale = 0.02 / math.sqrt(2 * n_layers)
     for block in self.layers:
         torch.nn.init.normal_(block.attn.mixer.weight, mean=0.0, std=scale)
-        torch.nn.init.normal_(block.MLP[2].weight, mean=0.0, std=scale)
+        if config.MoE != "TRUE":
+          torch.nn.init.normal_(block.MLP[2].weight, mean=0.0, std=scale)
+        if config.MoE_type == "top-k":
+          for expert in block.MoE_block.experts:
+              torch.nn.init.normal_(expert.MLP[2].weight, mean=0.0, std=scale)
 
   def _init_weights(self, module):
     if isinstance(module, nn.Linear):
@@ -38,8 +42,11 @@ class Dorian_SLM(nn.Module):
     B,T,C = E.shape
     E += self.pos_embedding(torch.arange(E.shape[1], device=E.device))
     # Transformer Layers
-    for layer in self.layers:
-      E = layer(E)
+    if config.MoE == "TRUE" and config.MoE_type == "top-k":
+      MoE_loss = 0
+      for layer in self.layers:
+        E, MoE_loss_holder = layer(E)
+        MoE_loss += MoE_loss_holder
     E = self.LN(E)
     # Single layer output perceptron
     logits = self.percep(E)
@@ -48,7 +55,10 @@ class Dorian_SLM(nn.Module):
       # calculating loss
       B,T,V = logits.shape
       loss = F.cross_entropy(logits.view(B*T,V) , target.view(B*T).long())
-      return logits , loss
+      if config.MoE == "TRUE" and config.MoE_type == "top-k":
+        return logits , loss , MoE_loss/len(self.layers)
+      else:
+        return logits , loss
     else:
       return logits
 
