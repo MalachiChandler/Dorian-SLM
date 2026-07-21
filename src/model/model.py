@@ -1,4 +1,4 @@
-import torcg.nn as nn
+import torch.nn as nn
 if config.layer == "standard":
   from layer import layer
 
