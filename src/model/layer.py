@@ -9,7 +9,7 @@ if config.attention == "flash":
 if config.MoE == "TRUE":
   if config.MoE_type == "switch":
     from MoE import switch_MoE_block
-  if config.MoE_type == "top-k"
+  if config.MoE_type == "top-k":
     from MoE import MoE_block
   else: print("Mixture of Experts type not recognized")
   
