@@ -1,3 +1,6 @@
+import torch.nn as nn
+from torch.nn import functional as F
+
 class MLP(nn.Module):
   def __init__(self, embedding_dim):
     super().__init__()
