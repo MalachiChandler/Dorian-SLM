@@ -1,4 +1,6 @@
 import torch.nn as nn
+import config
+
 if config.layer == "standard":
   from layer import layer
 
