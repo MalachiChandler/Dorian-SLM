@@ -1,6 +1,6 @@
 import torcg.nn as nn
 if config.layer == "standard":
-  from layer import layer:
+  from layer import layer
 
 # Creating class for model
 class Dorian_SLM(nn.Module):
