@@ -1,4 +1,5 @@
 import torch.nn as nn
+import config
 
 if config.attention == "standard":
   from attention import multi_head
