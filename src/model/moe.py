@@ -1,11 +1,8 @@
 import torch.nn as nn
 import config
 
-if config.layer == "standard":
-  from layer import layer
-
 # Creating class for model
-class Dorian_SLM(nn.Module):
+class MoE_SLM(nn.Module):
 
   def __init__(self , V , C , T , k=2, N=4, n_heads=1, n_layers=1):
     super().__init__()
@@ -24,11 +21,8 @@ class Dorian_SLM(nn.Module):
     scale = 0.02 / math.sqrt(2 * n_layers)
     for block in self.layers:
         torch.nn.init.normal_(block.attn.mixer.weight, mean=0.0, std=scale)
-        if config.MoE != "TRUE":
-          torch.nn.init.normal_(block.MLP[2].weight, mean=0.0, std=scale)
-        if config.MoE_type == "top-k":
-          for expert in block.MoE_block.experts:
-              torch.nn.init.normal_(expert.MLP[2].weight, mean=0.0, std=scale)
+        for expert in block.MoE_block.experts:
+            torch.nn.init.normal_(expert.MLP[2].weight, mean=0.0, std=scale)
 
   def _init_weights(self, module):
     if isinstance(module, nn.Linear):
@@ -44,11 +38,10 @@ class Dorian_SLM(nn.Module):
     B,T,C = E.shape
     E += self.pos_embedding(torch.arange(E.shape[1], device=E.device))
     # Transformer Layers
-    if config.MoE == "TRUE" and config.MoE_type == "top-k":
-      MoE_loss = 0
-      for layer in self.layers:
-        E, MoE_loss_holder = layer(E)
-        MoE_loss += MoE_loss_holder
+    MoE_loss = 0
+    for layer in self.layers:
+      E, MoE_loss_holder = layer(E)
+      MoE_loss += MoE_loss_holder
     E = self.LN(E)
     # Single layer output perceptron
     logits = self.percep(E)
@@ -57,10 +50,7 @@ class Dorian_SLM(nn.Module):
       # calculating loss
       B,T,V = logits.shape
       loss = F.cross_entropy(logits.view(B*T,V) , target.view(B*T).long())
-      if config.MoE == "TRUE" and config.MoE_type == "top-k":
-        return logits , loss , MoE_loss/len(self.layers)
-      else:
-        return logits , loss
+      return logits , loss , MoE_loss/len(self.layers)
     else:
       return logits
 
