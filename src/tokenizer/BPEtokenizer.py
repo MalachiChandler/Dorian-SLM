@@ -183,7 +183,7 @@ class tokenizer():
     Locations should be a list containing the locations to save pickle files for
     mint_map, merge_rank, encodeMap, decodeMap, and in that order.
     """
-    importants = [ mint_map, merge_rank, encodeMap, decodeMap ]
+    importants = [ self.mint_map, self.merge_rank, self.encodeMap, self.decodeMap ]
     for i in range(len(importants)):
       with open(locations[i], 'wb') as saver:
         pickle.dump(importants[i], saver, protocol=pickle.HIGHEST_PROTOCOL)
